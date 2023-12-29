@@ -1,4 +1,4 @@
-Multiclient branch
+Multiclient bypass branch with focus on keeping the original usage working
 ![image](https://github.com/QuePast/lol-bot/assets/8728328/09a8f533-5bba-4a3e-8a83-c4fd21e0467a)
 
 
