@@ -5,12 +5,10 @@ Handles HTTP Requests for Riot Client and League Client
 import logging
 from base64 import b64encode
 from time import sleep
-
 import requests
 import urllib3
-
+from lolbot.common.lcu import LeagueClientInfo, RiotClientInfo
 import lolbot.common.config as config
-
 
 class Connection:
     """Handles HTTP requests for Riot Client and League Client"""
@@ -24,11 +22,9 @@ class Connection:
         self.client_type = ''
         self.client_username = ''
         self.client_password = ''
-        self.procname = ''
-        self.pid = ''
         self.host = ''
         self.port = ''
-        self.protocol = ''
+        self.protocol = 'https'
         self.headers = ''
         self.session = requests.session()
         self.config = config.ConfigRW()
@@ -42,41 +38,29 @@ class Connection:
         self.host = Connection.RCU_HOST
         self.client_username = Connection.RCU_USERNAME
 
-        # lockfile
-        lockfile = open(config.Constants.RIOT_LOCKFILE, 'r')
-        data = lockfile.read()
-        self.log.debug(data)
-        lockfile.close()
-        data = data.split(':')
-        self.procname = data[0]
-        self.pid = data[1]
-        self.port = data[2]
-        self.client_password = data[3]
-        self.protocol = data[4]
-
+        # Get LoL process info using LcuInfo class
+        rcu_info = RiotClientInfo()
+        
+        self.port = rcu_info.port
+        self.client_password = rcu_info.remoting_auth_token
+        
         # headers
         userpass = b64encode(bytes('{}:{}'.format(self.client_username, self.client_password), 'utf-8')).decode('ascii')
         self.headers = {'Authorization': 'Basic {}'.format(userpass), "Content-Type": "application/json"}
         self.log.debug(self.headers['Authorization'])
 
     def set_lcu_headers(self, verbose: bool = True) -> None:
-        """Sets header info for League Client"""
+        """Sets header info for League Client using LoL process info"""
         self.host = Connection.LCU_HOST
         self.client_username = Connection.LCU_USERNAME
 
-        # lockfile
-        lockfile = open(self.config.get_data('league_lockfile'), 'r')
-        data = lockfile.read()
-        self.log.debug(data)
-        lockfile.close()
-        data = data.split(':')
-        self.procname = data[0]
-        self.pid = data[1]
-        self.port = data[2]
-        self.client_password = data[3]
-        self.protocol = data[4]
+        # Get LoL process info using LcuInfo class
+        lcu_info = LeagueClientInfo()
 
-        # headers
+        self.port = lcu_info.port
+        self.client_password = lcu_info.remoting_auth_token
+
+        # Headers
         userpass = b64encode(bytes('{}:{}'.format(self.client_username, self.client_password), 'utf-8')).decode('ascii')
         self.headers = {'Authorization': 'Basic {}'.format(userpass)}
         self.log.debug(self.headers['Authorization'])
@@ -87,22 +71,14 @@ class Connection:
             self.log.info("Connecting to LCU API")
         else:
             self.log.debug("Connecting to LCU API")
+
+        lcu_info = LeagueClientInfo()
         self.host = Connection.LCU_HOST
+        self.port = lcu_info.port
         self.client_username = Connection.LCU_USERNAME
+        self.client_password = lcu_info.remoting_auth_token
 
-        # lockfile
-        lockfile = open(self.config.get_data('league_lockfile'), 'r')
-        data = lockfile.read()
-        self.log.debug(data)
-        lockfile.close()
-        data = data.split(':')
-        self.procname = data[0]
-        self.pid = data[1]
-        self.port = data[2]
-        self.client_password = data[3]
-        self.protocol = data[4]
-
-        # headers
+        # Headers
         userpass = b64encode(bytes('{}:{}'.format(self.client_username, self.client_password), 'utf-8')).decode('ascii')
         self.headers = {'Authorization': 'Basic {}'.format(userpass)}
         self.log.debug(self.headers['Authorization'])
@@ -119,7 +95,7 @@ class Connection:
                     self.log.info("Connection Successful")
                 else:
                     self.log.debug("Connection Successful")
-                self.request('post', '/lol-login/v1/delete-rso-on-close')  # ensures self.logout after close
+                #self.request('post', '/lol-login/v1/delete-rso-on-close')  # ensures self.logout after close
                 sleep(2)
                 return
         raise Exception("Could not connect to League Client")

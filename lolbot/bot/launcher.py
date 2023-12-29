@@ -86,7 +86,18 @@ class Launcher:
 
     def start_league(self):
         self.log.info('Launching League')
-        subprocess.run([self.config.get_data('league_path')])
+        league_path = self.config.get_data('league_path')
+
+        # Define the parameters for launching the game.
+        params = [
+            league_path,
+            "--launch-product=league_of_legends",
+            "--launch-patchline=live",
+            "--allow-multiple-clients"
+        ]
+
+        # Start the process with the given parameters.
+        subprocess.run(params)
         sleep(3)
 
     def login(self) -> None:

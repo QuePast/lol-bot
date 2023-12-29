@@ -10,7 +10,6 @@ from typing import Any
 class Constants:
     """Constant settings"""
     # Constant paths
-    RIOT_LOCKFILE = os.path.join(os.getenv('LOCALAPPDATA'), 'Riot Games/Riot Client/Config/lockfile')
     CONFIG_DIR = os.path.join(os.getenv('LOCALAPPDATA'), 'LoLBot')
     BAK_DIR = os.path.join(CONFIG_DIR, 'bak')
     LOG_DIR = os.path.join(CONFIG_DIR, 'logs')
@@ -85,7 +84,6 @@ class ConfigRW:
         self.settings['league_dir'] = league_dir
         self.settings['league_path'] = os.path.join(league_dir, 'LeagueClient')
         self.settings['league_config'] = os.path.join(league_dir, 'Config/game.cfg')
-        self.settings['league_lockfile'] = os.path.join(league_dir, 'lockfile')
         self._json_update()
 
     def set_data(self, key: str, value: Any):

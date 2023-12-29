@@ -7,6 +7,7 @@ import subprocess
 import os
 import sys
 from time import sleep
+import getpass
 
 import keyboard
 import mouse
@@ -34,26 +35,72 @@ KILL_RIOT_CLIENT = 'TASKKILL /F /IM RiotClientUx.exe'
 class WindowNotFound(Exception):
     pass
 
-
 def is_league_running() -> bool:
-    """Checks if league processes exists"""
-    res = subprocess.check_output(["TASKLIST"], creationflags=0x08000000)
-    output = str(res)
-    for name in LEAGUE_PROCESS_NAMES:
-        if name in output:
-            return True
-    return False
+    """Checks if League of Legends processes exist and are started by the same user."""
+    try:
+        # Get the current username (the one running the script).
+        current_user = os.getlogin()
+        print(f"Current user:{current_user}")
 
+        # Fetch the list of tasks along with their respective usernames.
+        try:
+            tasks = subprocess.check_output(
+                "tasklist /v /fo csv", creationflags=0x08000000, shell=True
+            ).decode('utf-8')
+        except UnicodeDecodeError:
+            # If UTF-8 decoding fails, try a different encoding (e.g., cp437 or cp850).
+            tasks = subprocess.check_output(
+                "tasklist /v /fo csv", creationflags=0x08000000, shell=True
+            ).decode('cp437')
+
+        # Split the tasks into lines and iterate through them.
+        for task in tasks.strip().split('\n'):
+            # Split the CSV line into components.
+            parts = task.strip().split('","')
+            if len(parts) > 2:
+                process_name, _, _, _, _, _, username = parts[:7]
+                username = username.strip('"')
+
+                # Check if the username from tasklist ends with the current user and if the process is a League of Legends process.
+                if username.endswith(f'\\{current_user}') and process_name.strip('"') in LEAGUE_PROCESS_NAMES:
+                    return True
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return False
 
 def is_rc_running() -> bool:
-    """Checks if riot client process exists"""
-    res = subprocess.check_output(["TASKLIST"], creationflags=0x08000000)
-    output = str(res)
-    for name in RIOT_CLIENT_PROCESS_NAMES:
-        if name in output:
-            return True
-    return False
+    """Checks if Riot Client process exists and is started by the same user."""
+    try:
+        # Get the current username (the one running the script).
+        current_user = os.getlogin()
+        print(f"Current user:{current_user}")
+        # Fetch the list of tasks along with their respective usernames.
+        try:
+            tasks = subprocess.check_output(
+                "tasklist /v /fo csv", creationflags=0x08000000, shell=True
+            ).decode('utf-8')
+        except UnicodeDecodeError:
+            # If UTF-8 decoding fails, try a different encoding (e.g., cp437 or cp850).
+            tasks = subprocess.check_output(
+                "tasklist /v /fo csv", creationflags=0x08000000, shell=True
+            ).decode('cp437')
 
+        # Split the tasks into lines and iterate through them.
+        for task in tasks.strip().split('\n'):
+            # Split the CSV line into components.
+            parts = task.strip().split('","')
+            if len(parts) > 2:
+                process_name, _, _, _, _, _, username = parts[:7]
+                username = username.strip('"')
+
+                # Check if the process is a Riot Client process and if the username matches.
+                if process_name.strip('"') in RIOT_CLIENT_PROCESS_NAMES and username.endswith(f'\\{current_user}'):
+                    return True
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return False
 
 def is_game_running() -> bool:
     """Checks if game process exists"""
