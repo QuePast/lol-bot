@@ -40,7 +40,7 @@ def is_league_running() -> bool:
     try:
         # Get the current username (the one running the script).
         current_user = os.getlogin()
-        print(f"Current user:{current_user}")
+        print(f"Current user: {current_user}")
 
         # Fetch the list of tasks along with their respective usernames.
         try:
@@ -59,10 +59,11 @@ def is_league_running() -> bool:
             parts = task.strip().split('","')
             if len(parts) > 2:
                 process_name, _, _, _, _, _, username = parts[:7]
+                process_name = process_name.strip('"')
                 username = username.strip('"')
 
-                # Check if the username from tasklist ends with the current user and if the process is a League of Legends process.
-                if username.endswith(f'\\{current_user}') and process_name.strip('"') in LEAGUE_PROCESS_NAMES:
+                # Check if the process is a League of Legends process and if the username matches.
+                if (process_name in LEAGUE_PROCESS_NAMES or process_name.startswith("Leagueb")) and username.endswith(f'\\{current_user}'):
                     return True
 
     except Exception as e:
@@ -103,12 +104,40 @@ def is_rc_running() -> bool:
     return False
 
 def is_game_running() -> bool:
-    """Checks if game process exists"""
-    res = subprocess.check_output(["TASKLIST"], creationflags=0x08000000)
-    output = str(res)
-    if "League of Legends.exe" in output:
-        return True
+    """Checks if specific game processes exist and are started by the same user."""
+    try:
+        # Get the current username (the one running the script).
+        current_user = os.getlogin()
+        print(f"Current user: {current_user}")
+
+        # Fetch the list of tasks along with their respective usernames.
+        try:
+            tasks = subprocess.check_output(
+                "tasklist /v /fo csv", creationflags=0x08000000, shell=True
+            ).decode('utf-8')
+        except UnicodeDecodeError:
+            # If UTF-8 decoding fails, try a different encoding (e.g., cp437 or cp850).
+            tasks = subprocess.check_output(
+                "tasklist /v /fo csv", creationflags=0x08000000, shell=True
+            ).decode('cp437')
+
+        # Split the tasks into lines and iterate through them.
+        for task in tasks.strip().split('\n'):
+            # Split the CSV line into components.
+            parts = task.strip().split('","')
+            if len(parts) > 2:
+                process_name, _, _, _, _, _, username = parts[:7]
+                process_name = process_name.strip('"')
+                username = username.strip('"')
+
+                # Check if the process is a specific game process and if the username matches. Leagueb = Leaguemulticlientbypass
+                if (process_name == "League of Legends.exe" or process_name.startswith("Leagueb")) and username.endswith(f'\\{current_user}'):
+                    return True
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
     return False
+
 
 
 def close_all_processes() -> None:
